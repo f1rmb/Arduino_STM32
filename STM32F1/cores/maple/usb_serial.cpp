@@ -72,17 +72,19 @@ void USBSerial::begin(void) {
 //Roger Clark. Two new begin functions has been added so that normal Arduino Sketches that use Serial.begin(xxx) will compile.
 void USBSerial::begin(unsigned long ignoreBaud) 
 {
-volatile unsigned long removeCompilerWarningsIgnoreBaud=ignoreBaud;
+	unsigned long i=ignoreBaud; // Remove GCC warnings
 
-	ignoreBaud=removeCompilerWarningsIgnoreBaud;
+	ignoreBaud=i;
+	this->begin(); // RMB: make "Arduino" code really working...
 }
 void USBSerial::begin(unsigned long ignoreBaud, uint8_t ignore)
 {
-volatile unsigned long removeCompilerWarningsIgnoreBaud=ignoreBaud;
-volatile uint8_t removeCompilerWarningsIgnore=ignore;
+	unsigned long i=ignoreBaud; // Remove GCC warnings
+	uint8_t j=ignore;
 
-	ignoreBaud=removeCompilerWarningsIgnoreBaud;
-	ignore=removeCompilerWarningsIgnore;
+	ignoreBaud=i;
+	ignore=j;
+	this->begin(); // RMB: make "Arduino" code really working...
 }
 
 void USBSerial::end(void) {
