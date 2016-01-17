@@ -40,7 +40,7 @@
  * @return Clock source for the given clock ID
  */
 rcc_clk_domain rcc_dev_clk(rcc_clk_id id) {
-    return rcc_dev_table[id].clk_domain;
+	return rcc_dev_table[id].clk_domain;
 }
 
 /**
@@ -53,16 +53,16 @@ rcc_clk_domain rcc_dev_clk(rcc_clk_id id) {
  * @see rcc_sysclk_src
  */
 void rcc_switch_sysclk(rcc_sysclk_src sysclk_src) {
-    uint32 cfgr = RCC_BASE->CFGR;
-    cfgr &= ~RCC_CFGR_SW;
-    cfgr |= sysclk_src;
+	uint32 cfgr = RCC_BASE->CFGR;
+	cfgr &= ~RCC_CFGR_SW;
+	cfgr |= sysclk_src;
 
-    /* Switch SYSCLK source. */
-    RCC_BASE->CFGR = cfgr;
+	/* Switch SYSCLK source. */
+	RCC_BASE->CFGR = cfgr;
 
-    /* Wait for new source to come into use. */
-    while ((RCC_BASE->CFGR & RCC_CFGR_SWS) != (sysclk_src << 2))
-        ;
+	/* Wait for new source to come into use. */
+	while ((RCC_BASE->CFGR & RCC_CFGR_SWS) != (sysclk_src << 2))
+		;
 }
 
 /*
@@ -95,19 +95,19 @@ void rcc_switch_sysclk(rcc_sysclk_src sysclk_src) {
 
 /* Returns the RCC register which controls the clock source. */
 static inline __io uint32* rcc_clk_reg(rcc_clk clock) {
-    return (__io uint32*)((__io uint8*)RCC_BASE + (clock >> 8));
+	return (__io uint32*) ((__io uint8*) RCC_BASE + (clock >> 8));
 }
 
 /* Returns a mask in rcc_clk_reg(clock) to be used for turning the
  * clock on and off */
 static inline uint32 rcc_clk_on_mask(rcc_clk clock) {
-    return 1 << (clock & 0xFF);
+	return 1 << (clock & 0xFF);
 }
 
 /* Returns a mask in rcc_clk_reg(clock) to be used when checking the
  * readiness of the clock. */
 static inline uint32 rcc_clk_ready_mask(rcc_clk clock) {
-    return rcc_clk_on_mask(clock) << 1;
+	return rcc_clk_on_mask(clock) << 1;
 }
 
 /**
@@ -122,7 +122,7 @@ static inline uint32 rcc_clk_ready_mask(rcc_clk clock) {
  * @see rcc_is_clk_ready()
  */
 void rcc_turn_on_clk(rcc_clk clock) {
-    *rcc_clk_reg(clock) |= rcc_clk_on_mask(clock);
+	*rcc_clk_reg(clock) |= rcc_clk_on_mask(clock);
 }
 
 /**
@@ -139,7 +139,7 @@ void rcc_turn_on_clk(rcc_clk clock) {
  * @see rcc_is_clk_ready()
  */
 void rcc_turn_off_clk(rcc_clk clock) {
-    *rcc_clk_reg(clock) &= ~rcc_clk_on_mask(clock);
+	*rcc_clk_reg(clock) &= ~rcc_clk_on_mask(clock);
 }
 
 /**
@@ -148,7 +148,7 @@ void rcc_turn_off_clk(rcc_clk clock) {
  * @return 1 if the clock is on, 0 if the clock is off.
  */
 int rcc_is_clk_on(rcc_clk clock) {
-    return !!(*rcc_clk_reg(clock) & rcc_clk_on_mask(clock));
+	return !!(*rcc_clk_reg(clock) & rcc_clk_on_mask(clock));
 }
 
 /**
@@ -165,5 +165,5 @@ int rcc_is_clk_on(rcc_clk clock) {
  * @see rcc_turn_off_clk()
  */
 int rcc_is_clk_ready(rcc_clk clock) {
-    return (int)(*rcc_clk_reg(clock) & rcc_clk_ready_mask(clock));
+	return (int) (*rcc_clk_reg(clock) & rcc_clk_ready_mask(clock));
 }

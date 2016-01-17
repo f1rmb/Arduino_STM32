@@ -38,43 +38,44 @@
 /**
  * @brief Virtual serial terminal.
  */
-class USBSerial : public Stream {
+class USBSerial: public Stream {
 public:
-    USBSerial(void);
+	USBSerial(void);
 
-    void begin(void);
+	void begin(void);
 
 	// Roger Clark. Added dummy function so that existing Arduino sketches which specify baud rate will compile.
 	void begin(unsigned long);
 	void begin(unsigned long, uint8_t);
-    void end(void);
+	void end(void);
 
-	operator bool() { return true; } // Roger Clark. This is needed because in cardinfo.ino it does if (!Serial) . It seems to be a work around for the Leonardo that we needed to implement just to be compliant with the API
+	operator bool() {
+		return true;
+	} // Roger Clark. This is needed because in cardinfo.ino it does if (!Serial) . It seems to be a work around for the Leonardo that we needed to implement just to be compliant with the API
 
-    virtual int available(void);// Changed to virtual
+	virtual int available(void); // Changed to virtual
 
-    uint32 read(void *buf, uint32 len);
-   // uint8  read(void);
+	uint32 read(void *buf, uint32 len);
+	// uint8  read(void);
 
 	// Roger Clark. added functions to support Arduino 1.0 API
-    virtual int peek(void);
-    virtual int read(void);
-    int availableForWrite(void);
-    virtual void flush(void);
-	
-	
-    size_t write(uint8);
-    size_t write(const char *str);
-    size_t write(const void*, uint32);
+	virtual int peek(void);
+	virtual int read(void);
+	int availableForWrite(void);
+	virtual void flush(void);
 
-    uint8 getRTS();
-    uint8 getDTR();
-    uint8 isConnected();
-    uint8 pending();
+	size_t write(uint8);
+	size_t write(const char *str);
+	size_t write(const void*, uint32);
+
+	uint8 getRTS();
+	uint8 getDTR();
+	uint8 isConnected();
+	uint8 pending();
 };
 
 #ifdef SERIAL_USB 
-	extern USBSerial Serial;
+extern USBSerial Serial;
 #endif
 
 #endif
