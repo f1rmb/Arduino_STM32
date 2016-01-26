@@ -32,7 +32,6 @@
 
 #include "rtc_util.h"
 
-
 #define NR_RTC_HANDLERS                 4
 
 static rtc_dev rtc = {

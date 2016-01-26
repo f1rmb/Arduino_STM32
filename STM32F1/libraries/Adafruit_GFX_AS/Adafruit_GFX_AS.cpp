@@ -69,6 +69,8 @@ Adafruit_GFX::Adafruit_GFX(int16_t w, int16_t h):
   textsize  = 1;
   textcolor = textbgcolor = 0xFFFF;
   wrap      = true;
+  _arcAngleMax = DEFAULT_ARC_ANGLE_MAX;
+  _angleOffset = DEFAULT_ANGLE_OFFSET;
 }
 
 // Draw a circle outline
@@ -140,6 +142,290 @@ void Adafruit_GFX::drawCircleHelper( int16_t x0, int16_t y0,
       drawPixel(x0 - x, y0 - y, color);
     }
   }
+}
+
+
+void Adafruit_GFX::ellipse(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color)
+{
+  int16_t a = abs(x1 - x0), b = abs(y1 - y0), b1 = b & 1; /* values of diameter */
+  long dx = 4 * (1 - a) * b * b, dy = 4 * (b1 + 1) * a * a; /* error increment */
+  long err = dx + dy + b1 * a * a, e2; /* error of 1.step */
+
+  if (x0 > x1) { x0 = x1; x1 += a; } /* if called with swapped points */
+  if (y0 > y1) y0 = y1; /* .. exchange them */
+  y0 += (b + 1) / 2; /* starting pixel */
+  y1 = y0 - b1;
+  a *= 8 * a;
+  b1 = 8 * b * b;
+
+  do {
+    drawPixel(x1, y0, color); /*   I. Quadrant */
+    drawPixel(x0, y0, color); /*  II. Quadrant */
+    drawPixel(x0, y1, color); /* III. Quadrant */
+    drawPixel(x1, y1, color); /*  IV. Quadrant */
+    e2 = 2 * err;
+    if (e2 >= dx) { x0++; x1--; err += dx += b1; } /* x step */
+    if (e2 <= dy) { y0++; y1--; err += dy += a; }  /* y step */
+  } while (x0 <= x1);
+
+  while (y0 - y1 < b) {  /* too early stop of flat ellipses a=1 */
+    drawPixel(x0 - 1, ++y0, color); /* -> complete tip of ellipse */
+    drawPixel(x0 - 1, --y1, color);
+  }
+}
+
+void Adafruit_GFX::drawBezier(int x0, int y0, int x1, int y1, int x2, int y2,uint16_t color){
+  int sx = x0 < x2 ? 1 : -1, sy = y0 < y2 ? 1 : -1; /* step direction */
+  int cur = sx * sy * ((x0 - x1) * (y2 - y1) - (x2 - x1) * (y0 - y1)); /* curvature */
+  int x = x0 - 2 * x1 + x2, y = y0 - 2 * y1 + y2, xy = 2 * x * y * sx * sy;
+                                /* compute error increments of P0 */
+  long dx = (1 - 2 * abs(x0 - x1)) * y * y + abs(y0 - y1) * xy - 2 * cur * abs(y0 - y2);
+  long dy = (1 - 2 * abs(y0 - y1)) * x * x + abs(x0 - x1) * xy + 2 * cur * abs(x0 - x2);
+                                /* compute error increments of P2 */
+  long ex = (1 - 2 * abs(x2 - x1)) * y * y + abs(y2 - y1) * xy + 2 * cur * abs(y0 - y2);
+  long ey = (1 - 2 * abs(y2 - y1)) * x * x + abs(x2 - x1) * xy - 2 * cur * abs(x0 - x2);
+
+  if (cur == 0) { drawLine(x0, y0, x2, y2, color); return; } /* straight line */
+
+  x *= 2 * x; y *= 2 * y;
+  if (cur < 0) { /* negated curvature */
+    x = -x; dx = -dx; ex = -ex; xy = -xy;
+    y = -y; dy = -dy; ey = -ey;
+  }
+  /* algorithm fails for almost straight line, check error values */
+  if (dx >= -y || dy <= -x || ex <= -y || ey >= -x) {
+    drawLine(x0, y0, x1, y1, color); /* simple approximation */
+    drawLine(x1, y1, x2, y2, color);
+    return;
+  }
+  dx -= xy; ex = dx+dy; dy -= xy; /* error of 1.step */
+
+  for(;;) { /* plot curve */
+    drawPixel(y0, x0, color);
+    ey = 2 * ex - dy; /* save value for test of y step */
+    if (2 * ex >= dx) { /* x step */
+      if (x0 == x2) break;
+      x0 += sx; dy -= xy; ex += dx += y;
+    }
+    if (ey <= 0) { /* y step */
+      if (y0 == y2) break;
+      y0 += sy; dx -= xy; ex += dy += x;
+    }
+  }
+}
+
+// DrawArc function thanks to Jnmattern and his Arc_2.0 (https://github.com/Jnmattern)
+void Adafruit_GFX::fillArcOffsetted(uint16_t cx, uint16_t cy, uint16_t radius, uint16_t thickness, float start, float end, uint16_t color) {
+	int16_t xmin = 65535, xmax = -32767, ymin = 32767, ymax = -32767;
+	float cosStart, sinStart, cosEnd, sinEnd;
+	float r, t;
+	float startAngle, endAngle;
+
+	//Serial << "start: " << start << " end: " << end << endl;
+	startAngle = (start / _arcAngleMax) * 360;	// 252
+	endAngle = (end / _arcAngleMax) * 360;		// 807
+	//Serial << "startAngle: " << startAngle << " endAngle: " << endAngle << endl;
+
+	while (startAngle < 0) startAngle += 360;
+	while (endAngle < 0) endAngle += 360;
+	while (startAngle > 360) startAngle -= 360;
+	while (endAngle > 360) endAngle -= 360;
+	//Serial << "startAngleAdj: " << startAngle << " endAngleAdj: " << endAngle << endl;
+	//if (endAngle == 0) endAngle = 360;
+
+	if (startAngle > endAngle) {
+		fillArcOffsetted(cx, cy, radius, thickness, ((startAngle) / (float)360) * _arcAngleMax, _arcAngleMax, color);
+		fillArcOffsetted(cx, cy, radius, thickness, 0, ((endAngle) / (float)360) * _arcAngleMax, color);
+	}
+	else {
+		// Calculate bounding box for the arc to be drawn
+		cosStart = cosDegrees(startAngle);
+		sinStart = sinDegrees(startAngle);
+		cosEnd = cosDegrees(endAngle);
+		sinEnd = sinDegrees(endAngle);
+
+		//Serial << cosStart << " " << sinStart << " " << cosEnd << " " << sinEnd << endl;
+
+		r = radius;
+		// Point 1: radius & startAngle
+		t = r * cosStart;
+		if (t < xmin) xmin = t;
+		if (t > xmax) xmax = t;
+		t = r * sinStart;
+		if (t < ymin) ymin = t;
+		if (t > ymax) ymax = t;
+
+		// Point 2: radius & endAngle
+		t = r * cosEnd;
+		if (t < xmin) xmin = t;
+		if (t > xmax) xmax = t;
+		t = r * sinEnd;
+		if (t < ymin) ymin = t;
+		if (t > ymax) ymax = t;
+
+		r = radius - thickness;
+		// Point 3: radius-thickness & startAngle
+		t = r * cosStart;
+		if (t < xmin) xmin = t;
+		if (t > xmax) xmax = t;
+		t = r * sinStart;
+		if (t < ymin) ymin = t;
+		if (t > ymax) ymax = t;
+
+		// Point 4: radius-thickness & endAngle
+		t = r * cosEnd;
+		if (t < xmin) xmin = t;
+		if (t > xmax) xmax = t;
+		t = r * sinEnd;
+		if (t < ymin) ymin = t;
+		if (t > ymax) ymax = t;
+
+
+		//Serial << xmin << " " << xmax << " " << ymin << " " << ymax << endl;
+		// Corrections if arc crosses X or Y axis
+		if ((startAngle < 90) && (endAngle > 90)) {
+			ymax = radius;
+		}
+
+		if ((startAngle < 180) && (endAngle > 180)) {
+			xmin = -radius;
+		}
+
+		if ((startAngle < 270) && (endAngle > 270)) {
+			ymin = -radius;
+		}
+
+		// Slopes for the two sides of the arc
+		float sslope = (float)cosStart / (float)sinStart;
+		float eslope = (float)cosEnd / (float)sinEnd;
+
+		//Serial << "sslope2: " << sslope << " eslope2:" << eslope << endl;
+
+		if (endAngle == 360) eslope = -1000000;
+
+		int ir2 = (radius - thickness) * (radius - thickness);
+		int or2 = radius * radius;
+		//Serial << "ymin: " << ymin << " ymax: " << ymax << endl;
+
+		//fillScanline16(color);
+
+		//enableCS();
+		for (int x = xmin; x <= xmax; x++) {
+			bool y1StartFound = false, y2StartFound = false;
+			bool y1EndFound = false, y2EndSearching = false;
+			int y1s = 0, y1e = 0, y2s = 0;
+			for (int y = ymin; y <= ymax; y++)
+			{
+				int x2 = x * x;
+				int y2 = y * y;
+
+				if (
+					(x2 + y2 < or2 && x2 + y2 >= ir2) && (
+					(y > 0 && startAngle < 180 && x <= y * sslope) ||
+					(y < 0 && startAngle > 180 && x >= y * sslope) ||
+					(y < 0 && startAngle <= 180) ||
+					(y == 0 && startAngle <= 180 && x < 0) ||
+					(y == 0 && startAngle == 0 && x > 0)
+					) && (
+					(y > 0 && endAngle < 180 && x >= y * eslope) ||
+					(y < 0 && endAngle > 180 && x <= y * eslope) ||
+					(y > 0 && endAngle >= 180) ||
+					(y == 0 && endAngle >= 180 && x < 0) ||
+					(y == 0 && startAngle == 0 && x > 0)))
+				{
+					if (!y1StartFound)	//start of the higher line found
+					{
+						y1StartFound = true;
+						y1s = y;
+					}
+					else if (y1EndFound && !y2StartFound) //start of the lower line found
+					{
+						//Serial << "Found y2 start x: " << x << " y:" << y << endl;
+						y2StartFound = true;
+						//drawPixel_cont(cx+x, cy+y, ILI9341_BLUE);
+						y2s = y;
+						y += y1e - y1s - 1;	// calculate the most probable end of the lower line (in most cases the length of lower line is equal to length of upper line), in the next loop we will validate if the end of line is really there
+						if (y > ymax - 1) // the most probable end of line 2 is beyond ymax so line 2 must be shorter, thus continue with pixel by pixel search
+						{
+							y = y2s;	// reset y and continue with pixel by pixel search
+							y2EndSearching = true;
+						}
+
+						//Serial << "Upper line length: " << (y1e - y1s) << " Setting y to " << y << endl;
+					}
+					else if (y2StartFound && !y2EndSearching)
+					{
+						// we validated that the probable end of the lower line has a pixel, continue with pixel by pixel search, in most cases next loop with confirm the end of lower line as it will not find a valid pixel
+						y2EndSearching = true;
+					}
+					//Serial << "x:" << x << " y:" << y << endl;
+					//drawPixel_cont(cx+x, cy+y, ILI9341_BLUE);
+				}
+				else
+				{
+					if (y1StartFound && !y1EndFound) //higher line end found
+					{
+						y1EndFound = true;
+						y1e = y - 1;
+						//Serial << "line: " << y1s << " - " << y1e << endl;
+						drawFastVLine(cx + x, cy + y1s, y - y1s, color);
+						if (y < 0)
+						{
+							//Serial << x << " " << y << endl;
+							y = abs(y); // skip the empty middle
+						}
+						else
+							break;
+					}
+					else if (y2StartFound)
+					{
+						if (y2EndSearching)
+						{
+							//Serial << "Found final end at y: " << y << endl;
+							// we found the end of the lower line after pixel by pixel search
+							drawFastVLine(cx + x, cy + y2s, y - y2s, color);
+							y2EndSearching = false;
+							break;
+						}
+						else
+						{
+							//Serial << "Expected end not found" << endl;
+							// the expected end of the lower line is not there so the lower line must be shorter
+							y = y2s;	// put the y back to the lower line start and go pixel by pixel to find the end
+							y2EndSearching = true;
+						}
+					}
+					//else
+					//drawPixel_cont(cx+x, cy+y, ILI9341_RED);
+				}
+				//
+
+				//delay(75);
+			}
+			if (y1StartFound && !y1EndFound)
+			{
+				y1e = ymax;
+				//Serial << "line: " << y1s << " - " << y1e << endl;
+				drawFastVLine(cx + x, cy + y1s, y1e - y1s + 1, color);
+			}
+			else if (y2StartFound && y2EndSearching)	// we found start of lower line but we are still searching for the end
+			{										// which we haven't found in the loop so the last pixel in a column must be the end
+				drawFastVLine(cx + x, cy + y2s, ymax - y2s + 1, color);
+			}
+		}
+		//disableCS();
+	}
+}
+
+void Adafruit_GFX::setArcParams(float arcAngleMax)
+{
+	_arcAngleMax = arcAngleMax;
+}
+
+
+void Adafruit_GFX::setAngleOffset(int16_t angleOffset)
+{
+	_angleOffset = DEFAULT_ANGLE_OFFSET + angleOffset;
 }
 
 void Adafruit_GFX::fillCircle(int16_t x0, int16_t y0, int16_t r,
@@ -456,6 +742,11 @@ void Adafruit_GFX::setTextSize(uint8_t s) {
   textsize = (s > 0) ? s : 1;
 }
 
+uint8_t Adafruit_GFX::getTextSize()
+{
+	return textsize;
+}
+
 void Adafruit_GFX::setTextColor(uint16_t c) {
   // For 'transparent' background, we'll set the bg 
   // to the same as fg instead of using a flag
@@ -572,7 +863,7 @@ int16_t Adafruit_GFX::drawUnicode(uint16_t uniCode, int16_t x, int16_t y, int16_
 int16_t w = (width+7)/8;
 int16_t pX      = 0;
 int16_t pY      = y;
-int16_t color   = 0;
+//int16_t color   = 0;
 byte line = 0;
 
 //fillRect(x,pY,width+gap,height,textbgcolor);
@@ -818,3 +1109,4 @@ int16_t Adafruit_GFX::drawFloat(float floatNumber, int16_t decimal, int16_t poX,
     }
     return sumX;
 }
+
