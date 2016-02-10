@@ -1,7 +1,7 @@
 /*
-See rights and use declaration in License.h
-This library has been modified for the Maple Mini
-*/
+ See rights and use declaration in License.h
+ This library has been modified for the Maple Mini
+ */
 
 #ifndef _ADAFRUIT_ILI9341H_
 #define _ADAFRUIT_ILI9341H_
@@ -67,12 +67,19 @@ This library has been modified for the Maple Mini
 #define ILI9341_GMCTRP1 0xE0
 #define ILI9341_GMCTRN1 0xE1
 /*
-#define ILI9341_PWCTR6  0xFC
-*/
+ #define ILI9341_PWCTR6  0xFC
+ */
 
 #define ILI9341_VSCRSADD 0x37
 #define ILI9341_VSCRDEF  0x33
 
+#define ILI9341_MADCTL_MY  0x80
+#define ILI9341_MADCTL_MX  0x40
+#define ILI9341_MADCTL_MV  0x20
+#define ILI9341_MADCTL_ML  0x10
+#define ILI9341_MADCTL_RGB 0x00
+#define ILI9341_MADCTL_BGR 0x08
+#define ILI9341_MADCTL_MH  0x04
 
 // Color definitions
 #if 1
@@ -223,7 +230,6 @@ This library has been modified for the Maple Mini
 #define ILI9341_COLOR_GRAY3       	0x4A69      /*  76,  76,  76 */ // Even more lighter
 #define ILI9341_COLOR_GRAY4         0x5ACB     /* 90, 90, 90 */ // Even lighter
 
-
 #else
 #define ILI9341_COLOR_BLACK       0x0000      /*   0,   0,   0 */
 #define ILI9341_COLOR_NAVY        0x000F      /*   0,   0, 128 */
@@ -250,67 +256,59 @@ This library has been modified for the Maple Mini
 #define ILI9341_COLOR_GRAY3       0x4A69      /*  76,  76,  76 */ // Even more lighter
 #endif
 
-class Adafruit_ILI9341_STM : public Adafruit_GFX {
+class Adafruit_ILI9341_STM: public Adafruit_GFX
+{
 
- public:
+	public:
 
-  Adafruit_ILI9341_STM(int8_t _CS, int8_t _DC, int8_t _MOSI, int8_t _SCLK,
-		   int8_t _RST, int8_t _MISO);
-  Adafruit_ILI9341_STM(int8_t _CS, int8_t _DC, int8_t _RST = -1);
-  
-  void     begin(void),
-           setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1),
-           pushColor(uint16_t color),
-           fillScreen(uint16_t color),
-		   #if defined (__STM32F1__)
-		   drawLine(int16_t x0, int16_t y0,int16_t x1, int16_t y1, uint16_t color),
-		   #endif
-           drawPixel(int16_t x, int16_t y, uint16_t color),
-           drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color),
-           drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color),
-           fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
-             uint16_t color),
-           setRotation(uint8_t r),
-           invertDisplay(boolean i);
-  uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
+		Adafruit_ILI9341_STM(int8_t _CS, int8_t _DC, int8_t _MOSI, int8_t _SCLK, int8_t _RST, int8_t _MISO);
+		Adafruit_ILI9341_STM(int8_t _CS, int8_t _DC, int8_t _RST = -1);
 
-  /* These are not for current use, 8-bit protocol only! */
-  uint8_t  readdata(void),
-    readcommand8(uint8_t reg, uint8_t index = 0);
-  /*
-  uint16_t readcommand16(uint8_t);
-  uint32_t readcommand32(uint8_t);
-  void     dummyclock(void);
-  */  
+		void begin(void);
+		void setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
+		void setVerticalScrollDefinition(uint16_t wTFA, uint16_t wBFA);
+		void setVerticalScrollStartAddress(uint16_t wVSP);
+		void pushColor(uint16_t color), fillScreen(uint16_t color);
+#if defined (__STM32F1__)
+		void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color);
+#endif
+		void drawPixel(int16_t x, int16_t y, uint16_t color);
+		void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
+		void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
+		void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+		void setRotation(uint8_t r);
+		void invertDisplay(boolean i);
+		uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
 
-  void     spiwrite(uint8_t),
-    writecommand(uint8_t c),
-    writedata(uint8_t d),
-    commandList(uint8_t *addr);
-  uint8_t  spiread(void);
+		/* These are not for current use, 8-bit protocol only! */
+		uint8_t readdata(void), readcommand8(uint8_t reg, uint8_t index = 0);
+		/*
+		 uint16_t readcommand16(uint8_t);
+		 uint32_t readcommand32(uint8_t);
+		 void     dummyclock(void);
+		 */
 
+		void spiwrite(uint8_t), writecommand(uint8_t c), writedata(uint8_t d), commandList(uint8_t *addr);
+		uint8_t spiread(void);
 
- private:
-  uint8_t  tabcolor;
+	private:
+		uint8_t tabcolor;
 
-
-
-
-  boolean  hwSPI;
+		boolean hwSPI;
 #if defined (__AVR__) || defined(TEENSYDUINO)
-  uint8_t mySPCR;
-  volatile uint8_t *mosiport, *clkport, *dcport, *rsport, *csport;
-  int8_t  _cs, _dc, _rst, _mosi, _miso, _sclk;
-  uint8_t  mosipinmask, clkpinmask, cspinmask, dcpinmask;
+		uint8_t mySPCR;
+		volatile uint8_t *mosiport, *clkport, *dcport, *rsport, *csport;
+		int8_t _cs, _dc, _rst, _mosi, _miso, _sclk;
+		uint8_t mosipinmask, clkpinmask, cspinmask, dcpinmask;
 #elif defined (__STM32F1__)
-    volatile uint32 *mosiport, *clkport, *dcport, *rsport, *csport;
-    uint32_t  _cs, _dc, _rst, _mosi, _miso, _sclk;
-    uint32_t  mosipinmask, clkpinmask, cspinmask, dcpinmask;
-	uint16_t lineBuffer[ILI9341_TFTHEIGHT]; // DMA buffer. 16bit color data per pixel
+		volatile uint32 *mosiport, *clkport, *dcport, *rsport, *csport;
+		uint32_t _cs, _dc, _rst, _mosi, _miso, _sclk;
+		uint32_t mosipinmask, clkpinmask, cspinmask, dcpinmask;
+		uint16_t lineBuffer[ILI9341_TFTHEIGHT]; // DMA buffer. 16bit color data per pixel
 #elif defined (__arm__)
-    volatile RwReg *mosiport, *clkport, *dcport, *rsport, *csport;
-    uint32_t  _cs, _dc, _rst, _mosi, _miso, _sclk;
-    uint32_t  mosipinmask, clkpinmask, cspinmask, dcpinmask;
+		volatile RwReg *mosiport, *clkport, *dcport, *rsport, *csport;
+		uint32_t _cs, _dc, _rst, _mosi, _miso, _sclk;
+		uint32_t mosipinmask, clkpinmask, cspinmask, dcpinmask;
 #endif
 };
 
