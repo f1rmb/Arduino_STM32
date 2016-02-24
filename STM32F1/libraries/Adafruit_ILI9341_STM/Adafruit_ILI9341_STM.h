@@ -229,6 +229,8 @@
 #define ILI9341_COLOR_GRAY2       	0x39E7      /*  60,  60,  60 */ // Lighter
 #define ILI9341_COLOR_GRAY3       	0x4A69      /*  76,  76,  76 */ // Even more lighter
 #define ILI9341_COLOR_GRAY4         0x5ACB     /* 90, 90, 90 */ // Even lighter
+#define ILI9341_COLOR_LIGHTGREY2    0x94B2     /* 150, 150, 150 */ //
+#define ILI9341_COLOR_LIGHTGREY3    0xD6BA     /* 214, 214, 214 */ // *standard* in most GUI
 
 #else
 #define ILI9341_COLOR_BLACK       0x0000      /*   0,   0,   0 */
