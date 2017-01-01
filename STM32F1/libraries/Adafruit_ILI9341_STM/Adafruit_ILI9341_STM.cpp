@@ -109,9 +109,12 @@ void Adafruit_ILI9341_STM::writedata(uint8_t c)
 // libraries.  Otherwise, they simply do nothing.
 #ifdef SPI_HAS_TRANSACTION
 static inline void spi_begin(void) __attribute__((always_inline));
-static inline void spi_begin(void)
-{
-	SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
+static inline void spi_begin(void) {
+#ifdef __STM32F1__
+  SPI.beginTransaction(SPISettings(36000000, MSBFIRST, SPI_MODE0));
+#else
+  SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
+#endif
 }
 static inline void spi_end(void) __attribute__((always_inline));
 static inline void spi_end(void)

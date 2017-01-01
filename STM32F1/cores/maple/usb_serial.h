@@ -55,14 +55,19 @@ public:
 
 	virtual int available(void); // Changed to virtual
 
-	uint32 read(void *buf, uint32 len);
-	// uint8  read(void);
+    uint32 read(uint8 * buf, uint32 len);
+   // uint8  read(void);
 
 	// Roger Clark. added functions to support Arduino 1.0 API
-	virtual int peek(void);
-	virtual int read(void);
-	int availableForWrite(void);
-	virtual void flush(void);
+    virtual int peek(void);
+    virtual int read(void);
+    int availableForWrite(void);
+    virtual void flush(void);
+	
+	
+    size_t write(uint8);
+    size_t write(const char *str);
+    size_t write(const uint8*, uint32);
 
 	size_t write(uint8);
 	size_t write(const char *str);
