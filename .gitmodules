@@ -16,3 +16,6 @@
 [submodule "STM32F1/libraries/Adafruit_Sensor"]
 	path = STM32F1/libraries/Adafruit_Sensor
 	url = https://github.com/f1rmb/Adafruit_Sensor.git
+[submodule "STM32F1/libraries/URTouch"]
+	path = STM32F1/libraries/URTouch
+	url = https://github.com/f1rmb/URTouch.git
