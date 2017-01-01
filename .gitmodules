@@ -7,3 +7,12 @@
 [submodule "tools/src/texane-stlink"]
 	path = tools/src/texane-stlink
 	url = https://github.com/texane/stlink
+[submodule "STM32F1/libraries/TinyGPSPlus"]
+	path = STM32F1/libraries/TinyGPSPlus
+	url = https://github.com/f1rmb/TinyGPSPlus.git
+[submodule "STM32F1/libraries/Adafruit_HMC5883_Unified"]
+	path = STM32F1/libraries/Adafruit_HMC5883_Unified
+	url = https://github.com/f1rmb/Adafruit_HMC5883_Unified.git
+[submodule "STM32F1/libraries/Adafruit_Sensor"]
+	path = STM32F1/libraries/Adafruit_Sensor
+	url = https://github.com/f1rmb/Adafruit_Sensor.git
