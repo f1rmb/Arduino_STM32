@@ -69,10 +69,6 @@ public:
     size_t write(const char *str);
     size_t write(const uint8*, uint32);
 
-	size_t write(uint8);
-	size_t write(const char *str);
-	size_t write(const void*, uint32);
-
 	uint8 getRTS();
 	uint8 getDTR();
 	uint8 isConnected();
