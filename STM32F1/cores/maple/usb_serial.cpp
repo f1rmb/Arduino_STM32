@@ -41,7 +41,7 @@
 #include "wirish.h"
 
 /*
- * Hooks used for bootloader reset signalling
+ * Hooks used for bootloader reset signallingremoveCompilerWarningsIgnoreBaud
  */
 
 #if BOARD_HAVE_SERIALUSB
@@ -54,6 +54,9 @@ static void ifaceSetupHook(unsigned, void*);
  */
 
 #define USB_TIMEOUT 50
+#if BOARD_HAVE_SERIALUSB
+bool USBSerial::_hasBegun = false;
+#endif
 
 USBSerial::USBSerial(void) {
 #if !BOARD_HAVE_SERIALUSB
@@ -62,8 +65,13 @@ USBSerial::USBSerial(void) {
 }
 
 void USBSerial::begin(void) {
+	
 #if BOARD_HAVE_SERIALUSB
-    usb_cdcacm_enable(BOARD_USB_DISC_DEV, BOARD_USB_DISC_BIT);
+    if (_hasBegun)
+        return;
+    _hasBegun = true;
+
+    usb_cdcacm_enable(BOARD_USB_DISC_DEV, (uint8_t)BOARD_USB_DISC_BIT);
     usb_cdcacm_set_hooks(USB_CDCACM_HOOK_RX, rxHook);
     usb_cdcacm_set_hooks(USB_CDCACM_HOOK_IFACE_SETUP, ifaceSetupHook);
 #endif
@@ -72,26 +80,28 @@ void USBSerial::begin(void) {
 //Roger Clark. Two new begin functions has been added so that normal Arduino Sketches that use Serial.begin(xxx) will compile.
 void USBSerial::begin(unsigned long ignoreBaud) 
 {
-	unsigned long i=ignoreBaud; // Remove GCC warnings
+	unsigned long removeCompilerWarningsIgnoreBaud=ignoreBaud; // Remove GCC warnings
 
-	ignoreBaud=i;
-	this->begin(); // RMB: make "Arduino" code really working...
+	ignoreBaud=removeCompilerWarningsIgnoreBaud;
+	begin();
 }
 void USBSerial::begin(unsigned long ignoreBaud, uint8_t ignore)
 {
-	unsigned long i=ignoreBaud; // Remove GCC warnings
-	uint8_t j=ignore;
+	unsigned long removeCompilerWarningsIgnoreBaud=ignoreBaud; // Remove GCC warnings
+	uint8_t removeCompilerWarningsIgnore=ignore;
 
-	ignoreBaud=i;
-	ignore=j;
-	this->begin(); // RMB: make "Arduino" code really working...
+	ignoreBaud=removeCompilerWarningsIgnoreBaud;
+	ignore=removeCompilerWarningsIgnore;
+	begin();
 }
 
 void USBSerial::end(void) {
 #if BOARD_HAVE_SERIALUSB
-    usb_cdcacm_disable(BOARD_USB_DISC_DEV, BOARD_USB_DISC_BIT);
+    usb_cdcacm_disable(BOARD_USB_DISC_DEV, (uint8_t)BOARD_USB_DISC_BIT);
     usb_cdcacm_remove_hooks(USB_CDCACM_HOOK_RX | USB_CDCACM_HOOK_IFACE_SETUP);
+	_hasBegun = false;
 #endif
+
 }
 
 size_t USBSerial::write(uint8 ch) {
@@ -109,7 +119,7 @@ size_t n = 0;
 size_t USBSerial::write(const uint8 *buf, uint32 len)
 {
 size_t n = 0;
-    if (!this->isConnected() || !buf) {
+    if (!(bool) *this || !buf) {
         return 0;
     }
 
@@ -158,6 +168,19 @@ uint32 USBSerial::read(uint8 * buf, uint32 len) {
     return rxed;
 }
 
+size_t USBSerial::readBytes(char *buf, const size_t& len)
+{
+    size_t rxed=0;
+    unsigned long startMillis;
+    startMillis = millis();
+    if (len <= 0) return 0;
+    do {
+        rxed += usb_cdcacm_rx((uint8 *)buf + rxed, len - rxed);
+        if (rxed == len) return rxed;
+    } while(millis() - startMillis < _timeout);
+    return rxed;
+}
+
 /* Blocks forever until 1 byte is received */
 int USBSerial::read(void) {
     uint8 b;
@@ -180,16 +203,16 @@ uint8 USBSerial::pending(void) {
     return usb_cdcacm_get_pending();
 }
 
-uint8 USBSerial::isConnected(void) {
-    return usb_is_connected(USBLIB) && usb_is_configured(USBLIB) && usb_cdcacm_get_dtr();
-}
-
 uint8 USBSerial::getDTR(void) {
     return usb_cdcacm_get_dtr();
 }
 
 uint8 USBSerial::getRTS(void) {
     return usb_cdcacm_get_rts();
+}
+
+USBSerial::operator bool() {
+    return usb_is_connected(USBLIB) && usb_is_configured(USBLIB) && usb_cdcacm_get_dtr();
 }
 
 #if BOARD_HAVE_SERIALUSB

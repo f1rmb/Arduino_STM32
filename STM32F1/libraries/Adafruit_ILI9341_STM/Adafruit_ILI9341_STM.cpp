@@ -36,7 +36,7 @@ Adafruit_ILI9341_STM::Adafruit_ILI9341_STM(int8_t cs, int8_t dc, int8_t rst) :
 	_mosi = _sclk = 0;
 }
 
-void Adafruit_ILI9341_STM::spiwrite(uint8_t c)
+void Adafruit_ILI9341_STM::spiwrite(uint16_t c)
 {
 
 	//Serial.print("0x"); Serial.print(c, HEX); Serial.print(", ");
@@ -192,10 +192,7 @@ void Adafruit_ILI9341_STM::begin(void)
 	SPI.setBitOrder(MSBFIRST);
 	SPI.setDataMode(SPI_MODE0);
 #elif defined (__STM32F1__)
-		SPI.begin();
-		SPI.setClockDivider(SPI_CLOCK_DIV2);
-		SPI.setBitOrder(MSBFIRST);
-		SPI.setDataMode(SPI_MODE0);
+    SPI.beginTransaction(SPISettings(36000000));
 
 #elif defined (__arm__)
 		SPI.begin();
@@ -203,19 +200,153 @@ void Adafruit_ILI9341_STM::begin(void)
 		SPI.setBitOrder(MSBFIRST);
 		SPI.setDataMode(SPI_MODE0);
 #endif
-	}
-	else
-	{
-		pinMode(_sclk, OUTPUT);
-		pinMode(_mosi, OUTPUT);
-		pinMode(_miso, INPUT);
-		clkport = portOutputRegister(digitalPinToPort(_sclk));
-		clkpinmask = digitalPinToBitMask(_sclk);
-		mosiport = portOutputRegister(digitalPinToPort(_mosi));
-		mosipinmask = digitalPinToBitMask(_mosi);
-		*clkport &= ~clkpinmask;
-		*mosiport &= ~mosipinmask;
-	}
+  } else {
+    pinMode(_sclk, OUTPUT);
+    pinMode(_mosi, OUTPUT);
+    pinMode(_miso, INPUT);
+    clkport     = portOutputRegister(digitalPinToPort(_sclk));
+    clkpinmask  = digitalPinToBitMask(_sclk);
+    mosiport    = portOutputRegister(digitalPinToPort(_mosi));
+    mosipinmask = digitalPinToBitMask(_mosi);
+    *clkport   &= ~clkpinmask;
+    *mosiport  &= ~mosipinmask;
+  }
+
+  // toggle RST low to reset
+  if (_rst > 0) {
+    digitalWrite(_rst, HIGH);
+    delay(5);
+    digitalWrite(_rst, LOW);
+    delay(20);
+    digitalWrite(_rst, HIGH);
+    delay(150);
+  }
+
+  /*
+  uint8_t x = readcommand8(ILI9341_RDMODE);
+  Serial.print("\nDisplay Power Mode: 0x"); Serial.println(x, HEX);
+  x = readcommand8(ILI9341_RDMADCTL);
+  Serial.print("\nMADCTL Mode: 0x"); Serial.println(x, HEX);
+  x = readcommand8(ILI9341_RDPIXFMT);
+  Serial.print("\nPixel Format: 0x"); Serial.println(x, HEX);
+  x = readcommand8(ILI9341_RDIMGFMT);
+  Serial.print("\nImage Format: 0x"); Serial.println(x, HEX);
+  x = readcommand8(ILI9341_RDSELFDIAG);
+  Serial.print("\nSelf Diagnostic: 0x"); Serial.println(x, HEX);
+  */
+  //if(cmdList) commandList(cmdList);
+
+  if (hwSPI) spi_begin();
+  writecommand(0xEF);
+  writedata(0x03);
+  writedata(0x80);
+  writedata(0x02);
+
+  writecommand(0xCF);
+  writedata(0x00);
+  writedata(0XC1);
+  writedata(0X30);
+
+  writecommand(0xED);
+  writedata(0x64);
+  writedata(0x03);
+  writedata(0X12);
+  writedata(0X81);
+
+  writecommand(0xE8);
+  writedata(0x85);
+  writedata(0x00);
+  writedata(0x78);
+
+  writecommand(0xCB);
+  writedata(0x39);
+  writedata(0x2C);
+  writedata(0x00);
+  writedata(0x34);
+  writedata(0x02);
+
+  writecommand(0xF7);
+  writedata(0x20);
+
+  writecommand(0xEA);
+  writedata(0x00);
+  writedata(0x00);
+
+  writecommand(ILI9341_PWCTR1);    //Power control
+  writedata(0x23);   //VRH[5:0]
+
+  writecommand(ILI9341_PWCTR2);    //Power control
+  writedata(0x10);   //SAP[2:0];BT[3:0]
+
+  writecommand(ILI9341_VMCTR1);    //VCM control
+  writedata(0x3e); //�Աȶȵ���
+  writedata(0x28);
+
+  writecommand(ILI9341_VMCTR2);    //VCM control2
+  writedata(0x86);  //--
+
+  writecommand(ILI9341_MADCTL);    // Memory Access Control
+  writedata(0x48);
+
+  writecommand(ILI9341_PIXFMT);
+  writedata(0x55);
+
+  writecommand(ILI9341_FRMCTR1);
+  writedata(0x00);
+  writedata(0x18);
+
+  writecommand(ILI9341_DFUNCTR);    // Display Function Control
+  writedata(0x08);
+  writedata(0x82);
+  writedata(0x27);
+
+  writecommand(0xF2);    // 3Gamma Function Disable
+  writedata(0x00);
+
+  writecommand(ILI9341_GAMMASET);    //Gamma curve selected
+  writedata(0x01);
+
+  writecommand(ILI9341_GMCTRP1);    //Set Gamma
+  writedata(0x0F);
+  writedata(0x31);
+  writedata(0x2B);
+  writedata(0x0C);
+  writedata(0x0E);
+  writedata(0x08);
+  writedata(0x4E);
+  writedata(0xF1);
+  writedata(0x37);
+  writedata(0x07);
+  writedata(0x10);
+  writedata(0x03);
+  writedata(0x0E);
+  writedata(0x09);
+  writedata(0x00);
+
+  writecommand(ILI9341_GMCTRN1);    //Set Gamma
+  writedata(0x00);
+  writedata(0x0E);
+  writedata(0x14);
+  writedata(0x03);
+  writedata(0x11);
+  writedata(0x07);
+  writedata(0x31);
+  writedata(0xC1);
+  writedata(0x48);
+  writedata(0x08);
+  writedata(0x0F);
+  writedata(0x0C);
+  writedata(0x31);
+  writedata(0x36);
+  writedata(0x0F);
+
+  writecommand(ILI9341_SLPOUT);    //Exit Sleep
+  if (hwSPI) spi_end();
+  delay(120);
+  if (hwSPI) spi_begin();
+  writecommand(ILI9341_DISPON);    //Display on
+  if (hwSPI) spi_end();
+  if (hwSPI) SPI.setDataSize(SPI_CR1_DFF);
 
 	// toggle RST low to reset
 	if (_rst > 0)
@@ -361,21 +492,17 @@ void Adafruit_ILI9341_STM::begin(void)
 void Adafruit_ILI9341_STM::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
 {
 #if defined (__STM32F1__)  
-	writecommand(ILI9341_CASET); // Column addr set
-	*dcport |= dcpinmask;
-	*csport &= ~cspinmask;
-	SPI.setDataSize(SPI_CR1_DFF);
-	SPI.write(x0);
-	SPI.write(x1);
-//  SPI.setDataSize (0);
-
-	writecommand(ILI9341_PASET); // Row addr set
-	*dcport |= dcpinmask;
-	*csport &= ~cspinmask;
-//  SPI.setDataSize (SPI_CR1_DFF);
-	SPI.write(y0);
-	SPI.write(y1);
-	SPI.setDataSize(0);
+  writecommand(ILI9341_CASET); // Column addr set
+  *dcport |=  dcpinmask;
+  *csport &= ~cspinmask;
+  SPI.write(x0);
+  SPI.write(x1);
+  
+  writecommand(ILI9341_PASET); // Row addr set
+  *dcport |=  dcpinmask;
+  *csport &= ~cspinmask;
+  SPI.write(y0);
+  SPI.write(y1);
 
 	writecommand(ILI9341_RAMWR); // write to RAM
 
@@ -406,11 +533,11 @@ void Adafruit_ILI9341_STM::setVerticalScrollDefinition(uint16_t wTFA, uint16_t w
 #if defined (__STM32F1__)
 	*dcport |= dcpinmask;
 	*csport &= ~cspinmask;
-	SPI.setDataSize(SPI_CR1_DFF); // Set datasize to 16
+	//SPI.setDataSize(SPI_CR1_DFF); // Set datasize to 16
 	SPI.write(wTFA);
 	SPI.write(ILI9341_TFTHEIGHT - (wTFA + wBFA));
 	SPI.write(wBFA);
-	SPI.setDataSize(0); // Reset datasize to 8
+	//SPI.setDataSize(0); // Reset datasize to 8
 #else
 	writedata(wTFA >> 8);
 	writedata(wTFA & 0xFF);
@@ -430,9 +557,9 @@ void Adafruit_ILI9341_STM::setVerticalScrollStartAddress(uint16_t wVSP)
 #if defined (__STM32F1__)
 	*dcport |= dcpinmask;
 	*csport &= ~cspinmask;
-	SPI.setDataSize(SPI_CR1_DFF); // Set datasize to 16
+	//SPI.setDataSize(SPI_CR1_DFF); // Set datasize to 16
 	SPI.write(wVSP);
-	SPI.setDataSize(0); // Reset datasize to 8
+	//SPI.setDataSize(0); // Reset datasize to 8
 #else
 	writedata(wVSP >> 8);
 	writedata(wVSP & 0xFF);
@@ -448,8 +575,7 @@ void Adafruit_ILI9341_STM::pushColor(uint16_t color)
 	//digitalWrite(_cs, LOW);
 	*csport &= ~cspinmask;
 
-	spiwrite(color >> 8);
-	spiwrite(color);
+  spiwrite(color);
 
 	*csport |= cspinmask;
 	//digitalWrite(_cs, HIGH);
@@ -457,8 +583,24 @@ void Adafruit_ILI9341_STM::pushColor(uint16_t color)
 		spi_end();
 }
 
-void Adafruit_ILI9341_STM::drawPixel(int16_t x, int16_t y, uint16_t color)
+void Adafruit_ILI9341_STM::pushColors(void * colorBuffer, uint16_t nr_pixels, uint8_t async)
 {
+  *dcport |=  dcpinmask;
+  *csport &= ~cspinmask;
+
+  if (async==0) 
+  {
+    SPI.dmaSend(colorBuffer, nr_pixels, 1);
+	*csport |= cspinmask;
+  }
+  else
+  {
+    SPI.dmaSendAsync(colorBuffer, nr_pixels, 1);
+  }
+
+}
+
+void Adafruit_ILI9341_STM::drawPixel(int16_t x, int16_t y, uint16_t color) {
 
 	if ((x < 0) || (x >= _width) || (y < 0) || (y >= _height))
 		return;
@@ -470,8 +612,7 @@ void Adafruit_ILI9341_STM::drawPixel(int16_t x, int16_t y, uint16_t color)
 	*dcport |= dcpinmask;
 	*csport &= ~cspinmask;
 
-	spiwrite(color >> 8);
-	spiwrite(color);
+  spiwrite(color);
 
 	*csport |= cspinmask;
 	if (hwSPI)
@@ -500,17 +641,14 @@ void Adafruit_ILI9341_STM::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16
 	*csport &= ~cspinmask;
 
 #if defined (__STM32F1__)
-	SPI.setDataSize(SPI_CR1_DFF); // Set SPI 16bit mode
-	lineBuffer[0] = color;
-	SPI.dmaSend(lineBuffer, h, 0);
-	SPI.setDataSize(0);
-#else
-	uint8_t hi = color >> 8, lo = color;
-	while (h--)
-	{
-		spiwrite(hi);
-		spiwrite(lo);
-	}
+  lineBuffer[0] = color;
+  SPI.dmaSend(lineBuffer, h, 0);
+ #else
+  uint8_t hi = color >> 8, lo = color;
+  while (h--) {
+    spiwrite(hi);
+    spiwrite(lo);
+  }
 #endif
 	*csport |= cspinmask;
 }
@@ -535,10 +673,8 @@ void Adafruit_ILI9341_STM::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16
 	*csport &= ~cspinmask;
 
 #if defined (__STM32F1__)
-	SPI.setDataSize(SPI_CR1_DFF); // Set spi 16bit mode
-	lineBuffer[0] = color;
-	SPI.dmaSend(lineBuffer, w, 0);
-	SPI.setDataSize(0);
+  lineBuffer[0] = color;
+  SPI.dmaSend(lineBuffer, w, 0);
 #else
 	uint8_t hi = color >> 8, lo = color;
 	while (w--)
@@ -555,14 +691,12 @@ void Adafruit_ILI9341_STM::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16
 void Adafruit_ILI9341_STM::fillScreen(uint16_t color)
 {
 #if defined (__STM32F1__)
-	setAddrWindow(0, 0, _width - 1, _height - 1);
-	*dcport |= dcpinmask;
-	*csport &= ~cspinmask;
-	SPI.setDataSize(SPI_CR1_DFF); // Set spi 16bit mode
-	lineBuffer[0] = color;
-	SPI.dmaSend(lineBuffer, (65535), 0);
-	SPI.dmaSend(lineBuffer, ((_width * _height) - 65535), 0);
-	SPI.setDataSize(0);
+  setAddrWindow(0, 0, _width - 1, _height - 1);
+  *dcport |=  dcpinmask;
+  *csport &= ~cspinmask;
+  lineBuffer[0] = color;
+  SPI.dmaSend(lineBuffer, (65535), 0);
+  SPI.dmaSend(lineBuffer, ((_width * _height) - 65535), 0);
 
 #else
 	fillRect(0, 0, _width, _height, color);
@@ -593,18 +727,14 @@ void Adafruit_ILI9341_STM::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, 
 	*dcport |= dcpinmask;
 	*csport &= ~cspinmask;
 #if defined (__STM32F1__)
-	SPI.setDataSize(SPI_CR1_DFF); // Set spi 16bit mode
-	lineBuffer[0] = color;
-	if (w * h <= 65535)
-	{
-		SPI.dmaSend(lineBuffer, (w * h), 0);
-	}
-	else
-	{
-		SPI.dmaSend(lineBuffer, (65535), 0);
-		SPI.dmaSend(lineBuffer, ((w * h) - 65535), 0);
-	}
-	SPI.setDataSize(0);
+  lineBuffer[0] = color;
+  if (w*h <= 65535) {
+  SPI.dmaSend(lineBuffer, (w*h), 0);
+  }
+  else {
+  SPI.dmaSend(lineBuffer, (65535), 0);
+  SPI.dmaSend(lineBuffer, ((w*h) - 65535), 0);
+  }
 #else
 	uint8_t hi = color >> 8, lo = color;
 	for(y=h; y>0; y--)
@@ -769,38 +899,36 @@ uint16_t Adafruit_ILI9341_STM::color565(uint8_t r, uint8_t g, uint8_t b)
 	return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
 
-void Adafruit_ILI9341_STM::setRotation(uint8_t m)
-{
+void Adafruit_ILI9341_STM::setRotation(uint8_t m) {
 
-	if (hwSPI)
-		spi_begin();
-	writecommand(ILI9341_MADCTL);
-	rotation = m % 4; // can't be higher than 3
-	switch (rotation)
-	{
-		case 0:
-			writedata(ILI9341_MADCTL_MX | ILI9341_MADCTL_BGR);
-			_width = ILI9341_TFTWIDTH;
-			_height = ILI9341_TFTHEIGHT;
-			break;
-		case 1:
-			writedata(ILI9341_MADCTL_MV | ILI9341_MADCTL_BGR);
-			_width = ILI9341_TFTHEIGHT;
-			_height = ILI9341_TFTWIDTH;
-			break;
-		case 2:
-			writedata(ILI9341_MADCTL_MY | ILI9341_MADCTL_BGR);
-			_width = ILI9341_TFTWIDTH;
-			_height = ILI9341_TFTHEIGHT;
-			break;
-		case 3:
-			writedata(ILI9341_MADCTL_MX | ILI9341_MADCTL_MY | ILI9341_MADCTL_MV | ILI9341_MADCTL_BGR);
-			_width = ILI9341_TFTHEIGHT;
-			_height = ILI9341_TFTWIDTH;
-			break;
-	}
-	if (hwSPI)
-		spi_end();
+  if (hwSPI) spi_begin();
+  if (hwSPI) SPI.setDataSize(0);
+  writecommand(ILI9341_MADCTL);
+  rotation = m % 4; // can't be higher than 3
+  switch (rotation) {
+    case 0:
+      writedata(ILI9341_MADCTL_MX | ILI9341_MADCTL_BGR);
+      _width  = ILI9341_TFTWIDTH;
+      _height = ILI9341_TFTHEIGHT;
+      break;
+    case 1:
+      writedata(ILI9341_MADCTL_MV | ILI9341_MADCTL_BGR);
+      _width  = ILI9341_TFTHEIGHT;
+      _height = ILI9341_TFTWIDTH;
+      break;
+    case 2:
+      writedata(ILI9341_MADCTL_MY | ILI9341_MADCTL_BGR);
+      _width  = ILI9341_TFTWIDTH;
+      _height = ILI9341_TFTHEIGHT;
+      break;
+    case 3:
+      writedata(ILI9341_MADCTL_MX | ILI9341_MADCTL_MY | ILI9341_MADCTL_MV | ILI9341_MADCTL_BGR);
+      _width  = ILI9341_TFTHEIGHT;
+      _height = ILI9341_TFTWIDTH;
+      break;
+  }
+  if (hwSPI) SPI.setDataSize(SPI_CR1_DFF);
+  if (hwSPI) spi_end();
 }
 
 void Adafruit_ILI9341_STM::invertDisplay(boolean i)

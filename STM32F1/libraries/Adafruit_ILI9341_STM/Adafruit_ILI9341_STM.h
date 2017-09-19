@@ -8,8 +8,12 @@
 
 #include "Arduino.h"
 #include "Print.h"
-#include <Adafruit_GFX_AS.h>
+#include <Adafruit_GFX.h>
 #include <avr/pgmspace.h>
+
+#ifndef swap
+  #define swap(a, b) { int16_t t = a; a = b; b = t; }
+#endif
 
 #define ILI9341_TFTWIDTH  240
 #define ILI9341_TFTHEIGHT 320
@@ -270,7 +274,9 @@ class Adafruit_ILI9341_STM: public Adafruit_GFX
 		void setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
 		void setVerticalScrollDefinition(uint16_t wTFA, uint16_t wBFA);
 		void setVerticalScrollStartAddress(uint16_t wVSP);
-		void pushColor(uint16_t color), fillScreen(uint16_t color);
+		void pushColor(uint16_t color);
+		void fillScreen(uint16_t color);
+		void pushColors(void * colorBuffer, uint16_t nr_pixels, uint8_t async);
 #if defined (__STM32F1__)
 		void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color);
 #endif
@@ -290,13 +296,14 @@ class Adafruit_ILI9341_STM: public Adafruit_GFX
 		 void     dummyclock(void);
 		 */
 
-		void spiwrite(uint8_t), writecommand(uint8_t c), writedata(uint8_t d), commandList(uint8_t *addr);
+		void spiwrite(uint16_t), writecommand(uint8_t c), writedata(uint8_t d), commandList(uint8_t *addr);
 		uint8_t spiread(void);
 
 	private:
 		uint8_t tabcolor;
 
 		boolean hwSPI;
+
 #if defined (__AVR__) || defined(TEENSYDUINO)
 		uint8_t mySPCR;
 		volatile uint8_t *mosiport, *clkport, *dcport, *rsport, *csport;
