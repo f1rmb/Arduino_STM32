@@ -41,7 +41,7 @@
 #include "wirish.h"
 
 /*
- * Hooks used for bootloader reset signallingremoveCompilerWarningsIgnoreBaud
+ * Hooks used for bootloader reset signalling
  */
 
 #if BOARD_HAVE_SERIALUSB
@@ -80,15 +80,15 @@ void USBSerial::begin(void) {
 //Roger Clark. Two new begin functions has been added so that normal Arduino Sketches that use Serial.begin(xxx) will compile.
 void USBSerial::begin(unsigned long ignoreBaud) 
 {
-	unsigned long removeCompilerWarningsIgnoreBaud=ignoreBaud; // Remove GCC warnings
+	volatile unsigned long removeCompilerWarningsIgnoreBaud=ignoreBaud; // Remove GCC warnings
 
 	ignoreBaud=removeCompilerWarningsIgnoreBaud;
 	begin();
 }
 void USBSerial::begin(unsigned long ignoreBaud, uint8_t ignore)
 {
-	unsigned long removeCompilerWarningsIgnoreBaud=ignoreBaud; // Remove GCC warnings
-	uint8_t removeCompilerWarningsIgnore=ignore;
+	volatile unsigned long removeCompilerWarningsIgnoreBaud=ignoreBaud; // Remove GCC warnings
+	volatile uint8_t removeCompilerWarningsIgnore=ignore;
 
 	ignoreBaud=removeCompilerWarningsIgnoreBaud;
 	ignore=removeCompilerWarningsIgnore;
